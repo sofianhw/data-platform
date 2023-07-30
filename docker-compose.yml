@@ -1,0 +1,72 @@
+version: '3.9'
+services:
+  metabase-trino:
+    image: metabase/metabase
+    container_name: metabase-trino
+    hostname: metabase-trino
+    environment:
+      - JAVA_OPTS=-XX:MaxRAMPercentage=90
+    ports:
+     - 3000:3000
+    volumes: 
+    - ./plugins:/plugins
+    networks: 
+      - metanet
+    healthcheck:
+      test: curl --fail -I http://localhost:3000/api/health || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      postgres-data1-trino:
+        condition: service_healthy
+  postgres-data1-trino:
+    image: metabase/qa-databases:postgres-sample-12
+    container_name: postgres-data1-trino
+    hostname: postgres-data1
+    networks: 
+      - metanet
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U metabase -d sample"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: -c log_statement=all
+  mysql-data1-trino:
+    image: metabase/qa-databases:mysql-sample-8
+    container_name: mysql-data1-trino
+    hostname: mysql-data1
+    ports:
+    - 3306:3306
+    networks: 
+      - metanet
+    command: --general-log=1
+  mongo-data1:
+    image: metabase/qa-databases:mongo-sample-5.0
+    container_name: mongo_5
+    hostname: mongo_5
+    networks: 
+      - metanet
+  trino:
+    image: trinodb/trino:405
+    container_name: trino-server
+    hostname: trino-server
+    volumes: 
+    - /$PWD/trino-server/config.properties:/etc/trino/config.properties
+    - /$PWD/trino-server/postgres.properties:/etc/trino/catalog/postgres.properties
+    - /$PWD/trino-server/mongodb.properties:/etc/trino/catalog/mongodb.properties
+    - /$PWD/trino-server/mysql.properties:/etc/trino/catalog/mysql.properties
+    restart: always
+    ports:
+      - 8443:8443
+    networks:
+      - metanet
+    healthcheck:
+      test: /usr/lib/trino/bin/health-check
+      interval: 30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+networks: 
+  metanet:
+    driver: bridge
