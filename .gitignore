@@ -1,5 +1,5 @@
 .DS_Store
-dbt/logs/
-dbt/dbt_packages/
-dbt/target/
+dbt-trino/dbt/logs/
+dbt-trino/dbt/dbt_packages/
+dbt-trino/dbt/target/
 plugins/*
